@@ -53,7 +53,7 @@ public class SimpleUDPReceiver {
 			else
 			{
 				ackId = b.getInt();
-				response = "ACK " + ackId; 
+				response = "ACK" + ackId; 
 				
 				System.out.println("Pkt " + ackId);
 				//b2.clear();
