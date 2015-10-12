@@ -14,7 +14,7 @@ public class FileReceiver {
 		}
 		int port = Integer.parseInt(args[0]);
 		DatagramSocket sk = new DatagramSocket(port);
-		byte[] data = new byte[850];
+		byte[] data = new byte[1000];
 		byte[] dataToSender = new byte[200];
 		byte[] buffer = new byte[500];
 		DatagramPacket pkt = new DatagramPacket(data, data.length);
@@ -28,6 +28,7 @@ public class FileReceiver {
 		String fileName = "";
 		int dLength = 0;
 		int flagLast = 0;
+		int rmbSeq = 0;
 		
 		long startTime = System.currentTimeMillis(); //fetch starting time
 		while (!fileNameReceived)
@@ -71,17 +72,13 @@ public class FileReceiver {
 					//out.write(byteRemaining,0,rByteLength);
 					//System.out.println("Filename to save: "+fileName);
 					response = "ACK " + ackId; 
-					
 					System.out.println("Pkt " + ackId);
-					//b2.clear();
-					//b2.putInt(ackId);
 					dataToSender = response.getBytes();
-					
-					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
-							pkt.getSocketAddress());
+					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
 					sk.send(ack);
 					
 					fileNameReceived = true;
+					rmbSeq = ackId;
 				}
 					
 		}
@@ -113,7 +110,7 @@ public class FileReceiver {
 					System.out.println("Pkt corrupt");
 					
 					ackId = b.getInt();
-					response = "NAK" + ackId;
+					response = "NAK " + ackId;
 					dataToSender = response.getBytes();
 					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
 							pkt.getSocketAddress());
@@ -122,6 +119,9 @@ public class FileReceiver {
 				else
 				{
 					ackId = b.getInt();
+					if (ackId != rmbSeq)
+					{
+						rmbSeq = ackId;
 					response = "ACK " + ackId; 
 					dLength = b.getInt();
 					flagLast = b.getInt();
@@ -138,7 +138,14 @@ public class FileReceiver {
 					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
 							pkt.getSocketAddress());
 					sk.send(ack);
-					
+					}
+					else{
+						response = "ACK " + ackId; 
+						System.out.println("Pkt " + ackId);
+						dataToSender = response.getBytes();
+						DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
+						sk.send(ack);
+					}
 				}	
 			}//end of while
 			

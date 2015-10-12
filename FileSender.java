@@ -26,9 +26,9 @@ public class FileSender {
 					
 					DatagramSocket sk = new DatagramSocket();
 					DatagramPacket pkt;
-					byte[] data = new byte[800];
+					byte[] data = new byte[950];
 					byte[] dataR = new byte[200];
-					byte[] dataS = new byte[850];
+					byte[] dataS = new byte[1000];
 					
 					ByteBuffer b = ByteBuffer.wrap(dataS);
 
@@ -102,43 +102,41 @@ public class FileSender {
 					 
 						 pkt = new DatagramPacket(dataS, dataS.length, addr);
 						 // Debug output
-						 System.out.println("Sent CRC:" + chksum + " Contents:" + bytesToHex(data));
+						 //System.out.println("Sent CRC:" + chksum + " Contents:" + bytesToHex(data));
 						 sk.send(pkt);
 						 
-						 i++;
+						 dataR = new byte[200];
+ 						 pkt = new DatagramPacket(dataR, dataR.length, addr);
+ 					   pkt.setLength(dataR.length);
+ 					   sk.receive(pkt);
+						 String response = new String(pkt.getData(), 0, pkt.getLength());
+					 	 System.out.println(response);
+						 while(!response.equals("ACK "+i))
+						 {
+							 pkt = new DatagramPacket(dataS, dataS.length, addr);
+							 	sk.send(pkt);
+								dataR = new byte[200];
+	  						 pkt = new DatagramPacket(dataR, dataR.length, addr);
+	  					   pkt.setLength(dataR.length);
+	  					   sk.receive(pkt);
+								 response = new String(pkt.getData(), 0, pkt.getLength());
+						 }
+						 i++; //increment for seqeuence number
+						 
 					 }
-					// 
-					// for (int i = 1; i <= num; i++)
+					
+					// while (true)
 					// {
-					// 	b.clear();
-					// 	// reserve space for checksum
-					// 	b.putLong(0);
-					// 	b.putInt(i); //sequence number 
-					// 	crc.reset();
-					// 	crc.update(data, 8, data.length-8);
-					// 	chksum = crc.getValue();
-					// 	b.rewind();
-					// 	b.putLong(chksum);
-					// 
-					// 	pkt = new DatagramPacket(data, data.length, addr);
-					// 	// Debug output
-					// 	System.out.println("Sent CRC:" + chksum + " Contents:" + bytesToHex(data));
-					// 	sk.send(pkt);
+					// 	dataR = new byte[200];
+					// 	pkt = new DatagramPacket(dataR, dataR.length, addr);
+					// 	pkt.setLength(dataR.length);
+					// 	sk.receive(pkt);
+					// 	 
+					// 	String response = new String(pkt.getData(), 0, pkt.getLength());
+					// 	//bbFileName.rewind();
+					// 	System.out.println(response);
 					// 	
 					// }
-					
-					while (true)
-					{
-						dataR = new byte[200];
-						pkt = new DatagramPacket(dataR, dataR.length, addr);
-						pkt.setLength(dataR.length);
-						sk.receive(pkt);
-						 
-						String response = new String(pkt.getData(), 0, pkt.getLength());
-						//bbFileName.rewind();
-						System.out.println(response);
-						
-					}
 				}catch(Exception e){
 					e.printStackTrace(System.out);
 				}
