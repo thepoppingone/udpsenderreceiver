@@ -14,17 +14,20 @@ public class FileReceiver {
 		}
 		int port = Integer.parseInt(args[0]);
 		DatagramSocket sk = new DatagramSocket(port);
-		byte[] data = new byte[1500];
-		byte[] data2 = new byte[200];
+		byte[] data = new byte[850];
+		byte[] dataToSender = new byte[200];
+		byte[] buffer = new byte[500];
 		DatagramPacket pkt = new DatagramPacket(data, data.length);
 		ByteBuffer b = ByteBuffer.wrap(data);
-		ByteBuffer b2 = ByteBuffer.wrap(data2);
+		ByteBuffer b2 = ByteBuffer.wrap(dataToSender);
 		CRC32 crc = new CRC32();
 		int ackId = 5;
 		boolean fileNameReceived = false;
 		boolean fileCreated = false;
 		String response = "";
 		String fileName = "";
+		int dLength = 0;
+		int flagLast = 0;
 		
 		long startTime = System.currentTimeMillis(); //fetch starting time
 		while (!fileNameReceived)
@@ -52,8 +55,8 @@ public class FileReceiver {
 					//b2.clear();
 					//b2.putInt(ackId);
 					response = "NAK" + ackId;
-					data2 = response.getBytes();
-					DatagramPacket ack = new DatagramPacket(data2, data2.length,
+					dataToSender = response.getBytes();
+					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
 							pkt.getSocketAddress());
 					sk.send(ack);
 				}
@@ -72,9 +75,9 @@ public class FileReceiver {
 					System.out.println("Pkt " + ackId);
 					//b2.clear();
 					//b2.putInt(ackId);
-					data2 = response.getBytes();
+					dataToSender = response.getBytes();
 					
-					DatagramPacket ack = new DatagramPacket(data2, data2.length,
+					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
 							pkt.getSocketAddress());
 					sk.send(ack);
 					
@@ -84,11 +87,11 @@ public class FileReceiver {
 		}
 		
 	try{
-				
-	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("test.txt"));
+			//	System.out.println("reach here for file name "+fileName);
+	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(fileName.trim()));
 			// 
-			// while(true || (System.currentTimeMillis()-startTime)<10000)
-			// {
+			 while(flagLast == 0)
+			 {
 				pkt.setLength(data.length);
 				sk.receive(pkt);
 
@@ -101,7 +104,7 @@ public class FileReceiver {
 				long chksum = b.getLong();
 				crc.reset();
 				crc.update(data, 8, pkt.getLength()-8);
-				System.out.println("THE SENT CHECKSUM: "+chksum);
+			//	System.out.println("THE SENT CHECKSUM: "+chksum);
 			// 	// Debug output
 			// 	 System.out.println("Received CRC:" + crc.getValue() + " Data:" + bytesToHex(data, pkt.getLength()));
 			// 
@@ -111,8 +114,8 @@ public class FileReceiver {
 					
 					ackId = b.getInt();
 					response = "NAK" + ackId;
-					data2 = response.getBytes();
-					DatagramPacket ack = new DatagramPacket(data2, data2.length,
+					dataToSender = response.getBytes();
+					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
 							pkt.getSocketAddress());
 					sk.send(ack);
 				}
@@ -120,24 +123,29 @@ public class FileReceiver {
 				{
 					ackId = b.getInt();
 					response = "ACK " + ackId; 
+					dLength = b.getInt();
+					flagLast = b.getInt();
+					
+					System.out.println("Pkt " + ackId + " Data Length: "+dLength+" flagLast: "+flagLast);
 					//b2.clear();
 					//b2.putInt(ackId);
-					data2 = response.getBytes();
+					dataToSender = response.getBytes();
 					
-					int rByteLength = b.remaining();
-					byte[] byteRemaining = new byte[rByteLength];
-					b.get(byteRemaining);
-					out.write(byteRemaining);
+					byte[] dataItself = new byte[dLength];
+					b.get(dataItself);
+					out.write(dataItself);
 					
-					DatagramPacket ack = new DatagramPacket(data2, data2.length,
+					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
 							pkt.getSocketAddress());
 					sk.send(ack);
-							
+					
 				}	
-			// }//end of while
+			}//end of while
 			
 			out.flush();
 			out.close();
+			
+			System.out.println("File written successfully.");
 		} // end of try
 		catch (Exception e)
 		{

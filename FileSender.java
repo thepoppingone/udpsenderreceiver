@@ -26,9 +26,9 @@ public class FileSender {
 					
 					DatagramSocket sk = new DatagramSocket();
 					DatagramPacket pkt;
-					byte[] data = new byte[500];
+					byte[] data = new byte[800];
 					byte[] dataR = new byte[200];
-					byte[] dataS = new byte[550];
+					byte[] dataS = new byte[850];
 					
 					ByteBuffer b = ByteBuffer.wrap(dataS);
 
@@ -81,13 +81,18 @@ public class FileSender {
 					 */
 					int length = 0;
 					int i = 1;
-					System.out.println("reach here");
+					int flagLast = 0;
+					
 					 while ((length = in.read(data,0,data.length))!= -1)
 					 {
+						 int dLength = length;
+						 if(dLength < data.length){flagLast = 1;}
 						 b.clear();
 						 // reserve space for checksum
 						 b.putLong(0);
 						 b.putInt(i); //sequence number  
+						 b.putInt(dLength); //data length
+						 b.putInt(flagLast);
 						 b.put(data);
 						 crc.reset();
 						 crc.update(dataS, 8, dataS.length-8);
