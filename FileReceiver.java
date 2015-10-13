@@ -5,7 +5,7 @@ import java.util.zip.*;
 import java.io.*;
 
 public class FileReceiver {
-
+	
 	public static void main(String[] args) throws Exception 
 	{
 		if (args.length != 1) {
@@ -32,79 +32,74 @@ public class FileReceiver {
 		
 		long startTime = System.currentTimeMillis(); //fetch starting time
 		while (!fileNameReceived)
-	  {
+		{
 			pkt.setLength(data.length);
 			sk.receive(pkt);
-		
+			
 			b.rewind();
-				long chksum = b.getLong();
-				crc.reset();
-				crc.update(data, 8, pkt.getLength()-8);
-				//System.out.println("THE SENT CHECKSUM: "+chksum);
-				// Debug output
-				//System.out.println("Received CRC:" + crc.getValue() + " Data:" + bytesToHex(data, pkt.getLength()));
-				if (crc.getValue() != chksum){
-						ackId = b.getInt();
-						int rByteLength = b.remaining();
-						byte[] byteRemaining = new byte[rByteLength];
-						b.get(byteRemaining);
-						
-						System.out.println("Pkt corrupt");
-						fileName = new String(byteRemaining, 0, rByteLength);	
-						System.out.println("Filename to save: "+fileName);
+			long chksum = b.getLong();
+			crc.reset();
+			crc.update(data, 8, pkt.getLength()-8);
+			//System.out.println("THE SENT CHECKSUM: "+chksum);
+			// Debug output
+			//System.out.println("Received CRC:" + crc.getValue() + " Data:" + bytesToHex(data, pkt.getLength()));
+			if (crc.getValue() != chksum){
+				ackId = b.getInt();
+				int rByteLength = b.remaining();
+				byte[] byteRemaining = new byte[rByteLength];
+				b.get(byteRemaining);
 				
-					//b2.clear();
-					//b2.putInt(ackId);
-					response = "NAK" + ackId;
-					dataToSender = response.getBytes();
-					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
-							pkt.getSocketAddress());
-					sk.send(ack);
-				}
-				else{
-					ackId = b.getInt();
-					int rByteLength = b.remaining();
-					byte[] byteRemaining = new byte[rByteLength];
-					b.get(byteRemaining);
-					
-					fileName = new String(byteRemaining, 0, rByteLength);	
-					System.out.println("Filename to save: "+fileName);
-					//out.write(byteRemaining,0,rByteLength);
-					//System.out.println("Filename to save: "+fileName);
-					response = "ACK " + ackId; 
-					System.out.println("Pkt " + ackId);
-					dataToSender = response.getBytes();
-					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
-					sk.send(ack);
-					
-					fileNameReceived = true;
-					rmbSeq = ackId;
-				}
-					
+				System.out.println("Pkt corrupt");
+				fileName = new String(byteRemaining, 0, rByteLength);	
+				System.out.println("Corrupted Filename to save: "+fileName);
+				
+				//b2.clear();
+				//b2.putInt(ackId);
+				response = "NAK " + ackId;
+				dataToSender = response.getBytes();
+				DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
+				pkt.getSocketAddress());
+				sk.send(ack);
+			}
+			else{
+				ackId = b.getInt();
+				int rByteLength = b.remaining();
+				byte[] byteRemaining = new byte[rByteLength];
+				b.get(byteRemaining);
+				
+				fileName = new String(byteRemaining, 0, rByteLength);	
+				System.out.println("Clean Filename to save: "+fileName);
+				//out.write(byteRemaining,0,rByteLength);
+				//System.out.println("Filename to save: "+fileName);
+				response = "ACK " + ackId; 
+				System.out.println("Pkt id received: " + ackId);
+				dataToSender = response.getBytes();
+				DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
+				sk.send(ack);
+				
+				fileNameReceived = true;
+				rmbSeq = ackId;
+			}
+			
 		}
 		
-	try{
-			//	System.out.println("reach here for file name "+fileName);
-	BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(fileName.trim()));
+		try{
+		
+			BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(fileName.trim()));
 			// 
-			 while(flagLast == 0)
-			 {
+			while(flagLast == 0)
+			{
 				pkt.setLength(data.length);
 				sk.receive(pkt);
-
-			// 	if (pkt.getLength() < 8)
-			// 	{
-			// 		System.out.println("Pkt too short");
-			// 		continue;
-			// 	}
+				
 				b.rewind();
 				long chksum = b.getLong();
 				crc.reset();
 				crc.update(data, 8, pkt.getLength()-8);
-			//	System.out.println("THE SENT CHECKSUM: "+chksum);
-			// 	// Debug output
-			// 	 System.out.println("Received CRC:" + crc.getValue() + " Data:" + bytesToHex(data, pkt.getLength()));
-			// 
+				//	System.out.println("THE SENT CHECKSUM: "+chksum);
+				// 	// Debug output
+				// 	 System.out.println("Received CRC:" + crc.getValue() + " Data:" + bytesToHex(data, pkt.getLength()));
+				// 
 				if (crc.getValue() != chksum)
 				{
 					System.out.println("Pkt corrupt");
@@ -113,7 +108,7 @@ public class FileReceiver {
 					response = "NAK " + ackId;
 					dataToSender = response.getBytes();
 					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
-							pkt.getSocketAddress());
+					pkt.getSocketAddress());
 					sk.send(ack);
 				}
 				else
@@ -122,26 +117,27 @@ public class FileReceiver {
 					if (ackId != rmbSeq)
 					{
 						rmbSeq = ackId;
-					response = "ACK " + ackId; 
-					dLength = b.getInt();
-					flagLast = b.getInt();
-					
-					System.out.println("Pkt " + ackId + " Data Length: "+dLength+" flagLast: "+flagLast);
-					//b2.clear();
-					//b2.putInt(ackId);
-					dataToSender = response.getBytes();
-					
-					byte[] dataItself = new byte[dLength];
-					b.get(dataItself);
-					out.write(dataItself);
-					
-					DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
-							pkt.getSocketAddress());
-					sk.send(ack);
+						response = "ACK " + ackId; 
+						dLength = b.getInt();
+						flagLast = b.getInt();
+						
+						System.out.println("Pkt " + ackId + " Data Length: "+dLength+" flagLast: "+flagLast);
+						//b2.clear();
+						//b2.putInt(ackId);
+						dataToSender = response.getBytes();
+						
+						byte[] dataItself = new byte[dLength];
+						b.get(dataItself);
+						out.write(dataItself);
+						
+						DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,
+						pkt.getSocketAddress());
+						sk.send(ack);
 					}
 					else{
 						response = "ACK " + ackId; 
-						System.out.println("Pkt " + ackId);
+						System.out.println("Pkt id sent again: " + ackId);
+						System.out.println("Resending response code of: "+response);
 						dataToSender = response.getBytes();
 						DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
 						sk.send(ack);
@@ -152,23 +148,30 @@ public class FileReceiver {
 			out.flush();
 			out.close();
 			
-			System.out.println("File written successfully.");
+			System.out.println("The File "+fileName+" written successfully.");
+			// while(flagLast == 1)
+			// {
+			// 	pkt.setLength(data.length);
+			// 	sk.receive(pkt);
+			// 	
+			// }
+			
 		} // end of try
 		catch (Exception e)
 		{
 			e.printStackTrace(System.out);
 		}
-
+		
 	}
-
+	
 	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 	public static String bytesToHex(byte[] bytes, int len) {
-	    char[] hexChars = new char[len * 2];
-	    for ( int j = 0; j < len; j++ ) {
-	        int v = bytes[j] & 0xFF;
-	        hexChars[j * 2] = hexArray[v >>> 4];
-	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-	    }
-	    return new String(hexChars);
+		char[] hexChars = new char[len * 2];
+		for ( int j = 0; j < len; j++ ) {
+			int v = bytes[j] & 0xFF;
+			hexChars[j * 2] = hexArray[v >>> 4];
+			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+		}
+		return new String(hexChars);
 	}
 }
