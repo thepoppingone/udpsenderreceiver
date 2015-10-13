@@ -21,7 +21,7 @@ public class FileReceiver {
 		ByteBuffer b = ByteBuffer.wrap(data);
 		ByteBuffer b2 = ByteBuffer.wrap(dataToSender);
 		CRC32 crc = new CRC32();
-		int ackId = 5;
+		int ackId = -2;
 		boolean fileNameReceived = false;
 		boolean fileCreated = false;
 		String response = "";
@@ -96,10 +96,7 @@ public class FileReceiver {
 				long chksum = b.getLong();
 				crc.reset();
 				crc.update(data, 8, pkt.getLength()-8);
-				//	System.out.println("THE SENT CHECKSUM: "+chksum);
-				// 	// Debug output
-				// 	 System.out.println("Received CRC:" + crc.getValue() + " Data:" + bytesToHex(data, pkt.getLength()));
-				// 
+
 				if (crc.getValue() != chksum)
 				{
 					System.out.println("Pkt corrupt");
@@ -114,7 +111,7 @@ public class FileReceiver {
 				else
 				{
 					ackId = b.getInt();
-					if (ackId != rmbSeq)
+					if (ackId != rmbSeq) //write only if its correct sequence
 					{
 						rmbSeq = ackId;
 						response = "ACK " + ackId; 
@@ -149,18 +146,24 @@ public class FileReceiver {
 			out.close();
 			
 			System.out.println("The File "+fileName+" written successfully.");
-			// while(flagLast == 1)
-			// {
-			// 	pkt.setLength(data.length);
-			// 	sk.receive(pkt);
-			// 	
-			// }
 			
 		} // end of try
 		catch (Exception e)
 		{
 			e.printStackTrace(System.out);
 		}
+		
+		while(flagLast == 1)
+	 {
+		 pkt.setLength(data.length);
+		 sk.receive(pkt);
+		 response = "ACK " + rmbSeq; 
+		 System.out.println("Pkt id to close sender: " + rmbSeq);
+		 System.out.println("Sending response code of: "+response);
+		 dataToSender = response.getBytes();
+		 DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
+		 sk.send(ack);
+	 }
 		
 	}
 	
