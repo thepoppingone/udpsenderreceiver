@@ -41,7 +41,7 @@ public class FileReceiver2 {
     ByteBuffer b = ByteBuffer.wrap(data);
     
     byte[] dataToSender = new byte[200];
-    ByteBuffer b2 = ByteBuffer.wrap(dataToSender);
+  
     
   	DatagramPacket pkt = new DatagramPacket(data, data.length);
     
@@ -118,10 +118,26 @@ public class FileReceiver2 {
           //  dataList.add(dataObj);
           }
 
-        response = "ACK " + ackId; 
+        //response = "ACK"; 
+        //int rLength = response.getBytes().length;
+        //
+        ByteBuffer b2 = ByteBuffer.wrap(dataToSender);
         System.out.println("Pkt id received: " + ackId);
         System.out.println("Sequence List Size: "+seqList.size()+" num of pkts: "+numOfPackets);
-        dataToSender = response.getBytes();
+        b2.clear();
+        b2.putLong(0);
+        b2.putInt(ackId);
+        //b2.put(response.getBytes());
+        crc.reset();
+        crc.update(dataToSender, 8, dataToSender.length-8);
+        chksum = crc.getValue();
+        b2.rewind();
+        b2.putLong(chksum);
+        //b2.rewind();
+        //System.out.println("CHKSUM: "+chksum);
+        //System.out.println("b2 long: "+b2.getLong());
+        //System.out.println("b2 ack: "+b2.getInt());
+        
         DatagramPacket ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
         sk.send(ack);
         
@@ -160,7 +176,6 @@ public class FileReceiver2 {
     }
     
     
-
   }
 
 }

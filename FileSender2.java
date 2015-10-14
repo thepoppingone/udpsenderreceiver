@@ -34,10 +34,12 @@ public class FileSender2 {
 			byte[] dataF = new byte[200];
 			byte[] dataS = new byte[1000];
 			byte[] dataRS = new byte[1000];
+			byte[] dataAck = new byte[200];
 			
 			ByteBuffer b = ByteBuffer.wrap(dataS);
 			ByteBuffer b2 = ByteBuffer.wrap(dataRS);
 			ByteBuffer bbFileName = ByteBuffer.wrap(dataF);
+			ByteBuffer bbAck = ByteBuffer.wrap(dataAck);
 			
 			CRC32 crc = new CRC32();
 			boolean stillWaitingForName = true;
@@ -116,17 +118,32 @@ public class FileSender2 {
 					{
 							System.out.println("In while loop");
 						try{
-							pkt = new DatagramPacket(dataR, dataR.length, addr);
-							pkt.setLength(dataR.length);
+							pkt = new DatagramPacket(dataAck, dataAck.length);
+							pkt.setLength(dataAck.length);
 							sk.receive(pkt);
-							response = new String(pkt.getData(), 0, pkt.getLength());
-							System.out.println(response);
-							if(response.substring(0,3).equals("ACK"))
-							{
-								int	indexRemove = Integer.parseInt(response.substring(4));
+							
+							bbAck.rewind();
+							chksum = bbAck.getLong();
+							int indexRemove = bbAck.getInt();
+							System.out.println("ACK NUMBER: "+indexRemove);
+							System.out.println("CHKSUM: "+chksum);
+							crc.reset();
+							crc.update(dataAck, 8, pkt.getLength()-8);
+							if (crc.getValue() != chksum){
+								System.out.println("ACK message corrupted");
+							}else{
+						
 								seqList.remove(new Integer(indexRemove));
 								System.out.println("removing PACKET: "+indexRemove);
 							}
+							//response = new String(pkt.getData(), 0, pkt.getLength());
+							//System.out.println(response);
+							//if(response.substring(0,3).equals("ACK"))
+							//{
+							//	int	indexRemove = Integer.parseInt(response.substring(4));
+							//	seqList.remove(new Integer(indexRemove));
+							//	System.out.println("removing PACKET: "+indexRemove);
+							//}
 						}
 						catch(SocketTimeoutException e){
 							for(int j=0;j<seqList.size();j++)
