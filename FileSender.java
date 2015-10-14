@@ -15,7 +15,6 @@ public class FileSender {
 		}
 		
 		String fromFileName = args[2];
-		
 		String destinationName = args[3];
 		try{
 			
@@ -52,7 +51,7 @@ public class FileSender {
 				bbFileName.putLong(0);
 				bbFileName.putInt(-1); //sequence number 
 				bbFileName.put(destinationName.getBytes());
-				crc.reset();
+				crc.reset();	
 				crc.update(dataF, 8, dataF.length-8);
 				chksum = crc.getValue();
 				bbFileName.rewind();
@@ -199,7 +198,4 @@ public class FileSender {
 		return new String(hexChars);
 	}
 	
-	public static void sendOutData(BufferedInputStream in, byte[] data, ByteBuffer b ){
-		
-	}
 }
