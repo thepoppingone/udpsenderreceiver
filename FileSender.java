@@ -115,7 +115,7 @@ public class FileSender {
 				//System.out.println("Sending packet first time: "+i);
 				dataR = new byte[200];
 							
-					int frameWidth = 1000; 
+					int frameWidth = 10; 
 				if ((i+1)%frameWidth == 0 || (i+1) == numOfPackets )
 				{
 					while(!seqList.isEmpty())	
