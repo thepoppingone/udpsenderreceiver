@@ -22,14 +22,14 @@ public class FileSender {
 			InetSocketAddress addr = new InetSocketAddress(args[0], Integer.parseInt(args[1]));
 			int num = 10;
 			long fileSize = new File(fromFileName).length();
-			long numOfPackets = (fileSize/950)+2;
+			long numOfPackets = (fileSize/980)+2;
 			
 			long chksum = (long) 1;
 			
 			DatagramSocket sk = new DatagramSocket();
-			sk.setSoTimeout(200);
+			sk.setSoTimeout(2); //time out value
 			DatagramPacket pkt;
-			byte[] data = new byte[950];
+			byte[] data = new byte[980];
 			byte[] dataR = new byte[200];
 			byte[] dataF = new byte[200];
 			byte[] dataS = new byte[1000];
@@ -46,6 +46,11 @@ public class FileSender {
 			ArrayList<byte[]> packetSendList = new ArrayList<byte[]>();
 			ArrayList<Integer> seqList = new ArrayList<Integer>();
 			
+			
+			/********************************************************************************************************
+			PART ONE - SEND DATA					
+			*****************************************************************************************************************/
+		
 			/**
 			*  SENDS THE FILE NAME - WILL KEEP TRYING UNTIL THE ACK -1 is received
 			*/
@@ -105,18 +110,17 @@ public class FileSender {
 				packetSendList.add(newByte);
 				
 				pkt = new DatagramPacket(dataS, dataS.length, addr);
-				// Debug output
-				//System.out.println("Sent CRC:" + chksum + " Contents:" + bytesToHex(data));
 				sk.send(pkt);
 
-				System.out.println("Sending packet first time: "+i);
+				//System.out.println("Sending packet first time: "+i);
 				dataR = new byte[200];
-				
-				if ((i+1)%5 == 0 || (i+1) == numOfPackets )
+							
+					int frameWidth = 1000; 
+				if ((i+1)%frameWidth == 0 || (i+1) == numOfPackets )
 				{
 					while(!seqList.isEmpty())	
 					{
-							System.out.println("In while loop");
+							//System.out.println("In while loop");
 						try{
 							pkt = new DatagramPacket(dataAck, dataAck.length);
 							pkt.setLength(dataAck.length);
@@ -125,32 +129,25 @@ public class FileSender {
 							bbAck.rewind();
 							chksum = bbAck.getLong();
 							int indexRemove = bbAck.getInt();
-							System.out.println("ACK NUMBER: "+indexRemove);
-							System.out.println("CHKSUM: "+chksum);
+							//System.out.println("ACK NUMBER: "+indexRemove);
+							//System.out.println("CHKSUM: "+chksum);
 							crc.reset();
 							crc.update(dataAck, 8, pkt.getLength()-8);
 							if (crc.getValue() != chksum){
-								System.out.println("ACK message corrupted");
+								//System.out.println("ACK message corrupted");
 							}else{
 						
 								seqList.remove(new Integer(indexRemove));
-								System.out.println("removing PACKET: "+indexRemove);
+								//System.out.println("removing PACKET: "+indexRemove);
 							}
-							//response = new String(pkt.getData(), 0, pkt.getLength());
-							//System.out.println(response);
-							//if(response.substring(0,3).equals("ACK"))
-							//{
-							//	int	indexRemove = Integer.parseInt(response.substring(4));
-							//	seqList.remove(new Integer(indexRemove));
-							//	System.out.println("removing PACKET: "+indexRemove);
-							//}
+
 						}
 						catch(SocketTimeoutException e){
 							for(int j=0;j<seqList.size();j++)
 							{ 
 								dataRS = packetSendList.get(seqList.get(j));
-							//	System.out.println("resending packet: "+seqList.get(j)+" of DATA \n"+(new String(dataRS, 0, dataRS.length)));
-								System.out.println("resending packet: "+seqList.get(j));
+						
+								//System.out.println("resending packet: "+seqList.get(j));
 								pkt = new DatagramPacket(dataRS, dataRS.length, addr);
 								sk.send(pkt);
 							}
