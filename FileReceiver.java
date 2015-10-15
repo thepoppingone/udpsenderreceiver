@@ -135,7 +135,7 @@ public class FileReceiver {
                         ack = new DatagramPacket(dataToSender, dataToSender.length,pkt.getSocketAddress());
                         sk.send(ack);
                           //  System.out.println("seq num: "+rmbSeq);
-                        System.out.println("Seq List Size: "+seqList.size()+" # of pkts: "+numOfPackets+" Progress: "+((seqList.size()*100)/numOfPackets)+"%");
+                        System.out.println("Progress: "+((seqList.size()*100)/numOfPackets)+"%");
                       }
                       else{ //drop if wrong seq
                         //System.out.println("wrong seq - pkt dropped");
